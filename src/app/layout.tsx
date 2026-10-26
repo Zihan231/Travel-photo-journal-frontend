@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import "../styles/globals.css";
 import { AuthProvider } from "../context/AuthContext";
 import { ToastProvider } from "../lib/toast";
@@ -8,6 +8,14 @@ export const metadata: Metadata = {
   title: "OrbitWick Travel Photo Journal",
   description:
     "Capture, curate, and share your travel journeys with automated OpenRouter AI summaries and military-grade TOTP two-factor security.",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "32x32" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
