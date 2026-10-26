@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../lib/toast";
 import { api } from "../../../lib/api";
-import { Camera, UploadCloud, X, ArrowLeft } from "lucide-react";
+import { Camera, UploadCloud, X, ArrowLeft, Loader2, Sparkles } from "lucide-react";
 
 export default function NewPhotoPage() {
   const { user } = useAuth();
@@ -71,13 +71,28 @@ export default function NewPhotoPage() {
       router.push(`/photos/${created.id}`);
     } catch (err: any) {
       error(err.message || "Upload failed");
-    } finally {
       setUploading(false);
     }
   };
 
   return (
     <div className="container" style={{ maxWidth: "680px" }}>
+      {/* Fullscreen Loading Overlay */}
+      {uploading && (
+        <div className="loading-overlay">
+          <div className="spinner" />
+          <div style={{ textAlign: "center" }}>
+            <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#fff", marginBottom: "6px" }}>
+              Uploading Photo...
+            </h3>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+              <Sparkles size={16} color="#34d399" />
+              Storing in Cloudinary & generating AI summary
+            </p>
+          </div>
+        </div>
+      )}
+
       <div style={{ marginBottom: "20px" }}>
         <Link href="/photos" className="btn btn-secondary btn-sm" style={{ marginBottom: "12px" }}>
           <ArrowLeft size={16} />
@@ -141,15 +156,17 @@ export default function NewPhotoPage() {
                   alt="Upload preview"
                   style={{ width: "100%", maxHeight: "340px", objectFit: "contain", display: "block" }}
                 />
-                <button
-                  type="button"
-                  onClick={removeSelectedFile}
-                  className="btn btn-danger btn-sm"
-                  style={{ position: "absolute", top: "12px", right: "12px" }}
-                >
-                  <X size={16} />
-                  <span>Remove</span>
-                </button>
+                {!uploading && (
+                  <button
+                    type="button"
+                    onClick={removeSelectedFile}
+                    className="btn btn-danger btn-sm"
+                    style={{ position: "absolute", top: "12px", right: "12px" }}
+                  >
+                    <X size={16} />
+                    <span>Remove</span>
+                  </button>
+                )}
               </div>
             )}
             <input
@@ -166,6 +183,7 @@ export default function NewPhotoPage() {
             <input
               type="text"
               required
+              disabled={uploading}
               className="input-field"
               placeholder="Photo title"
               value={name}
@@ -178,6 +196,7 @@ export default function NewPhotoPage() {
             <input
               type="text"
               required
+              disabled={uploading}
               className="input-field"
               placeholder="City, Country"
               value={location}
@@ -189,6 +208,7 @@ export default function NewPhotoPage() {
             <label className="form-label">Description</label>
             <textarea
               required
+              disabled={uploading}
               className="input-field"
               placeholder="Write a description (summary will auto-generate)..."
               value={description}
@@ -197,7 +217,7 @@ export default function NewPhotoPage() {
           </div>
 
           <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "24px" }}>
-            <Link href="/photos" className="btn btn-secondary">
+            <Link href="/photos" className="btn btn-secondary" style={{ pointerEvents: uploading ? "none" : "auto", opacity: uploading ? 0.6 : 1 }}>
               Cancel
             </Link>
             <button
@@ -205,7 +225,17 @@ export default function NewPhotoPage() {
               disabled={uploading || !imageFile}
               className="btn btn-primary"
             >
-              {uploading ? "Uploading..." : "Upload"}
+              {uploading ? (
+                <>
+                  <Loader2 size={18} className="spin" />
+                  <span>Uploading...</span>
+                </>
+              ) : (
+                <>
+                  <Camera size={18} />
+                  <span>Upload</span>
+                </>
+              )}
             </button>
           </div>
         </form>

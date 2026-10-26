@@ -12,7 +12,7 @@ import {
   Save,
   UploadCloud,
   X,
-  Image as ImageIcon,
+  Loader2,
 } from "lucide-react";
 
 export default function EditPhotoPage() {
@@ -101,11 +101,10 @@ export default function EditPhotoPage() {
         });
       }
 
-      success("Photo and AI summary updated successfully!");
+      success("Photo updated successfully");
       router.push(`/photos/${id}`);
     } catch (err: any) {
       error(err.message || "Failed to update photo");
-    } finally {
       setSaving(false);
     }
   };
@@ -113,24 +112,40 @@ export default function EditPhotoPage() {
   if (loading) {
     return (
       <div className="container" style={{ textAlign: "center", padding: "100px 0" }}>
-        <p style={{ color: "var(--primary)" }}>Loading photo...</p>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+          <div className="spinner" style={{ width: "36px", height: "36px" }} />
+          <p style={{ color: "var(--text-muted)" }}>Loading photo...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="container" style={{ maxWidth: "720px" }}>
-      <div style={{ marginBottom: "24px" }}>
-        <Link href={`/photos/${id}`} className="btn btn-secondary btn-sm" style={{ marginBottom: "16px" }}>
+      {/* Fullscreen Loading Overlay during save/edit */}
+      {saving && (
+        <div className="loading-overlay">
+          <div className="spinner" />
+          <div style={{ textAlign: "center" }}>
+            <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#fff", marginBottom: "6px" }}>
+              Saving Changes...
+            </h3>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+              <Sparkles size={16} color="#34d399" />
+              Updating details and re-generating AI summary
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div style={{ marginBottom: "20px" }}>
+        <Link href={`/photos/${id}`} className="btn btn-secondary btn-sm" style={{ marginBottom: "12px" }}>
           <ArrowLeft size={16} />
-          <span>Back to Photo</span>
+          <span>Back</span>
         </Link>
-        <h1 style={{ fontSize: "1.8rem", fontWeight: 800, color: "#fff" }}>
-          Edit Travel Photo
+        <h1 style={{ fontSize: "1.8rem", fontWeight: 700, color: "#fff" }}>
+          Edit Photo
         </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: "0.95rem" }}>
-          Modifying the description will automatically re-generate the AI travel summary.
-        </p>
       </div>
 
       <div className="card">
@@ -155,7 +170,7 @@ export default function EditPhotoPage() {
                 style={{ width: "100%", maxHeight: "340px", objectFit: "contain", display: "block" }}
               />
 
-              {newPreviewUrl && (
+              {newPreviewUrl && !saving && (
                 <button
                   type="button"
                   onClick={cancelNewFile}
@@ -163,7 +178,7 @@ export default function EditPhotoPage() {
                   style={{ position: "absolute", top: "12px", right: "12px" }}
                 >
                   <X size={16} />
-                  <span>Revert to Original</span>
+                  <span>Revert</span>
                 </button>
               )}
             </div>
@@ -171,11 +186,12 @@ export default function EditPhotoPage() {
             {!newPreviewUrl && (
               <button
                 type="button"
+                disabled={saving}
                 onClick={() => fileInputRef.current?.click()}
                 className="btn btn-secondary btn-sm"
               >
                 <UploadCloud size={16} />
-                <span>Replace Image (Optional)</span>
+                <span>Replace Image</span>
               </button>
             )}
 
@@ -189,10 +205,11 @@ export default function EditPhotoPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Photo Name / Title</label>
+            <label className="form-label">Title</label>
             <input
               type="text"
               required
+              disabled={saving}
               className="input-field"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -204,6 +221,7 @@ export default function EditPhotoPage() {
             <input
               type="text"
               required
+              disabled={saving}
               className="input-field"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
@@ -211,23 +229,22 @@ export default function EditPhotoPage() {
           </div>
 
           <div className="form-group">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <label className="form-label">Description</label>
-              <span style={{ fontSize: "0.75rem", color: "#34d399", display: "flex", alignItems: "center", gap: "4px" }}>
-                <Sparkles size={12} />
-                AI summary will be updated
-              </span>
-            </div>
+            <label className="form-label">Description</label>
             <textarea
               required
+              disabled={saving}
               className="input-field"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
 
-          <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "28px" }}>
-            <Link href={`/photos/${id}`} className="btn btn-secondary">
+          <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "24px" }}>
+            <Link
+              href={`/photos/${id}`}
+              className="btn btn-secondary"
+              style={{ pointerEvents: saving ? "none" : "auto", opacity: saving ? 0.6 : 1 }}
+            >
               Cancel
             </Link>
             <button
@@ -237,8 +254,8 @@ export default function EditPhotoPage() {
             >
               {saving ? (
                 <>
-                  <Sparkles size={18} className="spin" />
-                  <span>Saving & Updating Summary...</span>
+                  <Loader2 size={18} className="spin" />
+                  <span>Saving...</span>
                 </>
               ) : (
                 <>
