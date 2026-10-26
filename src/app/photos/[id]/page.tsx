@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "../../../context/AuthContext";
@@ -15,7 +15,8 @@ import {
   Trash2,
   Maximize2,
   X,
-  ExternalLink,
+  ImageOff,
+  Plus,
 } from "lucide-react";
 
 interface Photo {
@@ -34,13 +35,17 @@ export default function PhotoDetailPage() {
   const id = params?.id as string;
 
   const { user, isLoading } = useAuth();
-  const { success, error } = useToast();
+  const { error } = useToast();
   const router = useRouter();
 
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  // Guard against duplicate fetches in React StrictMode
+  const fetchedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -48,19 +53,25 @@ export default function PhotoDetailPage() {
       return;
     }
 
-    if (id) {
+    if (id && fetchedIdRef.current !== id) {
+      fetchedIdRef.current = id;
       loadPhoto(id);
     }
-  }, [id, user, isLoading, router]);
+  }, [id, user, isLoading]);
 
   const loadPhoto = async (photoId: string) => {
     try {
       setLoading(true);
+      setNotFound(false);
       const data = await api.getPhoto(photoId);
       setPhoto(data);
     } catch (err: any) {
-      error(err.message || "Could not load photo");
-      router.push("/photos");
+      const msg = err?.message || "";
+      if (err?.statusCode === 404 || /not found/i.test(msg)) {
+        setNotFound(true);
+      } else {
+        error(msg || "Could not load photo");
+      }
     } finally {
       setLoading(false);
     }
@@ -68,14 +79,17 @@ export default function PhotoDetailPage() {
 
   const handleDelete = async () => {
     if (!photo) return;
-    if (!confirm(`Are you sure you want to delete "${photo.name}"? This permanently removes the Cloudinary asset.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete "${photo.name}"? This permanently removes the Cloudinary asset.`
+      )
+    ) {
       return;
     }
 
     setDeleting(true);
     try {
-      await api.deletePhoto(photo.id);
-      success("Photo deleted successfully.");
+      await api.deletePhoto(photo.id.toString());
       router.push("/photos");
     } catch (err: any) {
       error(err.message || "Failed to delete photo");
@@ -83,10 +97,114 @@ export default function PhotoDetailPage() {
     }
   };
 
-  if (loading || !photo) {
+  if (loading) {
     return (
       <div className="container" style={{ textAlign: "center", padding: "100px 0" }}>
         <p style={{ color: "var(--primary)" }}>Loading photo...</p>
+      </div>
+    );
+  }
+
+  // Custom minimal Not Found view
+  if (notFound || !photo) {
+    return (
+      <div
+        className="container"
+        style={{
+          maxWidth: "560px",
+          minHeight: "75vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "40px 20px",
+          textAlign: "center",
+        }}
+      >
+        <div
+          className="card"
+          style={{
+            width: "100%",
+            padding: "52px 36px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "16px",
+          }}
+        >
+          <div
+            style={{
+              width: "68px",
+              height: "68px",
+              borderRadius: "50%",
+              background: "rgba(239, 68, 68, 0.12)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#f87171",
+              marginBottom: "4px",
+            }}
+          >
+            <ImageOff size={34} />
+          </div>
+
+          <div
+            style={{
+              display: "inline-block",
+              padding: "4px 12px",
+              borderRadius: "9999px",
+              background: "rgba(255, 255, 255, 0.05)",
+              border: "1px solid var(--border-color)",
+              fontSize: "0.8rem",
+              color: "var(--text-dim)",
+              letterSpacing: "0.08em",
+            }}
+          >
+            PHOTO NOT FOUND
+          </div>
+
+          <h1
+            style={{
+              fontSize: "1.8rem",
+              fontWeight: 800,
+              color: "#fff",
+              margin: 0,
+            }}
+          >
+            Memory Not Found
+          </h1>
+
+          <p
+            style={{
+              color: "var(--text-muted)",
+              fontSize: "0.95rem",
+              lineHeight: 1.6,
+              margin: 0,
+              maxWidth: "420px",
+            }}
+          >
+            The photo you are looking for does not exist, has been removed, or belongs to another traveler.
+          </p>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              marginTop: "12px",
+              flexWrap: "wrap",
+              justifyContent: "center",
+            }}
+          >
+            <Link href="/photos" className="btn btn-primary btn-sm">
+              <ArrowLeft size={16} />
+              <span>Back to Photos</span>
+            </Link>
+            <Link href="/photos/new" className="btn btn-secondary btn-sm">
+              <Plus size={16} />
+              <span>Upload New Photo</span>
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
