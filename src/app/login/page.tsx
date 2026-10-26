@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../lib/toast";
 import { api, ApiError } from "../../lib/api";
-import { ArrowRight } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -50,14 +50,17 @@ export default function LoginPage() {
     }
   };
 
-  const handle2FaSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const execute2Fa = async (codeToVerify: string) => {
+    if (loading) return;
+    const trimmed = codeToVerify.trim();
+    if (!trimmed) return;
+
     setLoading(true);
 
     try {
       const res = await api.authenticate2Fa({
         twoFactorToken,
-        code: twoFactorCode.trim(),
+        code: trimmed,
       });
 
       loginSuccess(res.access_token, res.user);
@@ -67,6 +70,20 @@ export default function LoginPage() {
       error(err.message || "Invalid code");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handle2FaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await execute2Fa(twoFactorCode);
+  };
+
+  const handle2FaCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setTwoFactorCode(val);
+    const digits = val.replace(/\D/g, "");
+    if (digits.length === 6 && digits === val.trim() && !loading) {
+      execute2Fa(digits);
     }
   };
 
@@ -108,9 +125,16 @@ export default function LoginPage() {
                 type="submit"
                 disabled={loading}
                 className="btn btn-primary"
-                style={{ width: "100%", marginTop: "8px" }}
+                style={{ width: "100%", marginTop: "8px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
               >
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? (
+                  <>
+                    <Loader2 className="spin" size={16} />
+                    <span>Signing in...</span>
+                  </>
+                ) : (
+                  <span>Sign In</span>
+                )}
               </button>
             </form>
 
@@ -135,10 +159,10 @@ export default function LoginPage() {
                   required
                   autoFocus
                   className="input-field"
-                  placeholder="Code"
+                  placeholder="123456"
                   value={twoFactorCode}
-                  onChange={(e) => setTwoFactorCode(e.target.value)}
-                  style={{ textAlign: "center", letterSpacing: "2px", fontSize: "1.2rem", fontWeight: 700 }}
+                  onChange={handle2FaCodeChange}
+                  style={{ textAlign: "center", letterSpacing: "4px", fontSize: "1.3rem", fontWeight: 700 }}
                 />
               </div>
 
@@ -146,9 +170,16 @@ export default function LoginPage() {
                 type="submit"
                 disabled={loading}
                 className="btn btn-primary"
-                style={{ width: "100%", marginTop: "8px" }}
+                style={{ width: "100%", marginTop: "8px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
               >
-                {loading ? "Verifying..." : "Verify Code"}
+                {loading ? (
+                  <>
+                    <Loader2 className="spin" size={16} />
+                    <span>Verifying...</span>
+                  </>
+                ) : (
+                  <span>Verify Code</span>
+                )}
               </button>
 
               <button

@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { useToast } from "../../lib/toast";
 import { api } from "../../lib/api";
 
@@ -33,14 +34,27 @@ function VerifyEmailContent() {
     return () => clearInterval(interval);
   }, [cooldown]);
 
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const triggerVerify = async (codeToVerify: string, emailToVerify: string) => {
+    if (loading) return;
+
+    const trimmedEmail = emailToVerify.trim();
+    const trimmedCode = codeToVerify.trim();
+
+    if (!trimmedEmail) {
+      error("Email is required");
+      return;
+    }
+
+    if (trimmedCode.length !== 6) {
+      return;
+    }
+
     setLoading(true);
 
     try {
       const res = await api.verifyEmail({
-        email: email.trim(),
-        code: code.trim(),
+        email: trimmedEmail,
+        code: trimmedCode,
       });
 
       success(res.message || "Email verified. Please log in.");
@@ -52,20 +66,49 @@ function VerifyEmailContent() {
     }
   };
 
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await triggerVerify(code, email);
+  };
+
+  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 6);
+    setCode(digits);
+    if (digits.length === 6 && !loading) {
+      triggerVerify(digits, email);
+    }
+  };
+
   const handleResend = async () => {
-    if (!email) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
       error("Email is required");
       return;
     }
+    if (resending || cooldown > 0) return;
+
     setResending(true);
 
     try {
-      const res = await api.resendCode({ email: email.trim() });
+      const res = await api.resendCode({ email: trimmedEmail });
       success(res.message || "Verification code sent.");
-      setCooldown(180);
+      setCooldown(60);
     } catch (err: any) {
-      error(err.message || "Could not resend code");
-      if (cooldown === 0) setCooldown(60);
+      const msg = err.message || "Could not resend code";
+      error(msg);
+
+      // Parse remaining seconds if backend enforced cooldown
+      const minMatch = msg.match(/(\d+)\s*(?:minute|min)/i);
+      const secMatch = msg.match(/(\d+)\s*(?:second|sec)/i);
+      let waitSecs = 0;
+      if (minMatch) waitSecs += parseInt(minMatch[1], 10) * 60;
+      if (secMatch) waitSecs += parseInt(secMatch[1], 10);
+
+      if (waitSecs > 0) {
+        setCooldown(waitSecs);
+      } else if (cooldown === 0) {
+        setCooldown(60);
+      }
     } finally {
       setResending(false);
     }
@@ -100,7 +143,7 @@ function VerifyEmailContent() {
               className="input-field"
               placeholder="123456"
               value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              onChange={handleCodeChange}
               style={{ textAlign: "center", letterSpacing: "6px", fontSize: "1.3rem", fontWeight: 700 }}
             />
           </div>
@@ -109,9 +152,16 @@ function VerifyEmailContent() {
             type="submit"
             disabled={loading || code.length !== 6}
             className="btn btn-primary"
-            style={{ width: "100%", marginTop: "8px" }}
+            style={{ width: "100%", marginTop: "8px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
           >
-            {loading ? "Verifying..." : "Verify Email"}
+            {loading ? (
+              <>
+                <Loader2 className="spin" size={16} />
+                <span>Verifying...</span>
+              </>
+            ) : (
+              <span>Verify Email</span>
+            )}
           </button>
         </form>
 
@@ -121,11 +171,22 @@ function VerifyEmailContent() {
             onClick={handleResend}
             disabled={resending || cooldown > 0}
             className="btn btn-secondary btn-sm"
-            style={{ width: "100%" }}
+            style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
           >
-            {cooldown > 0
-              ? `Resend in ${Math.floor(cooldown / 60)}:${(cooldown % 60).toString().padStart(2, "0")}`
-              : "Resend Code"}
+            {resending ? (
+              <>
+                <Loader2 className="spin" size={15} />
+                <span>Resending Code...</span>
+              </>
+            ) : cooldown > 0 ? (
+              <span>
+                {cooldown >= 60
+                  ? `Resend in ${Math.floor(cooldown / 60)}:${(cooldown % 60).toString().padStart(2, "0")}`
+                  : `Resend in ${cooldown}s`}
+              </span>
+            ) : (
+              <span>Resend Code</span>
+            )}
           </button>
         </div>
 

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -11,11 +11,12 @@ import {
   QrCode,
   Copy,
   Check,
+  Loader2,
 } from "lucide-react";
 
 export default function SecurityPage() {
   const { user, isLoading } = useAuth();
-  const { success, error, info } = useToast();
+  const { success, error } = useToast();
   const router = useRouter();
 
   const [is2faEnabled, setIs2faEnabled] = useState<boolean | null>(null);
@@ -74,24 +75,38 @@ export default function SecurityPage() {
     }
   };
 
-  const handleVerifyAndEnable = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (verifyCode.trim().length !== 6) {
+  const executeEnable2Fa = async (codeToVerify: string) => {
+    if (activating) return;
+    const trimmed = codeToVerify.trim();
+    if (trimmed.length !== 6) {
       error("Enter a 6-digit code");
       return;
     }
 
     setActivating(true);
     try {
-      const res = await api.enable2Fa(verifyCode.trim());
+      const res = await api.enable2Fa(trimmed);
       setIs2faEnabled(true);
       setRecoveryCodes(res.recoveryCodes);
       setSetupStep("codes");
-      success("2FA enabled");
+      success("2FA enabled successfully");
     } catch (err: any) {
       error(err.message || "Invalid code");
     } finally {
       setActivating(false);
+    }
+  };
+
+  const handleVerifyAndEnable = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await executeEnable2Fa(verifyCode);
+  };
+
+  const handleVerifyCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 6);
+    setVerifyCode(digits);
+    if (digits.length === 6 && !activating) {
+      executeEnable2Fa(digits);
     }
   };
 
@@ -102,21 +117,26 @@ export default function SecurityPage() {
     setTimeout(() => setCopiedCodes(false), 2000);
   };
 
-  const handleDisable2Fa = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!disablePassword || !disableCode) {
-      error("Password and code are required");
+  const executeDisable2Fa = async (codeToVerify: string) => {
+    if (disabling) return;
+    const trimmedCode = codeToVerify.trim();
+    if (!disablePassword) {
+      error("Password is required");
+      return;
+    }
+    if (!trimmedCode) {
+      error("Code is required");
       return;
     }
 
     setDisabling(true);
     try {
-      await api.disable2Fa(disableCode.trim(), disablePassword);
+      await api.disable2Fa(trimmedCode, disablePassword);
       setIs2faEnabled(false);
       setSetupStep("idle");
       setDisablePassword("");
       setDisableCode("");
-      success("2FA disabled");
+      success("2FA disabled successfully");
     } catch (err: any) {
       error(err.message || "Failed to disable 2FA");
     } finally {
@@ -124,10 +144,25 @@ export default function SecurityPage() {
     }
   };
 
-  if (loadingStatus && is2faEnabled === null) {
+  const handleDisable2Fa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await executeDisable2Fa(disableCode);
+  };
+
+  const handleDisableCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setDisableCode(val);
+    const digits = val.replace(/\D/g, "");
+    if (digits.length === 6 && digits === val.trim() && disablePassword.trim().length > 0 && !disabling) {
+      executeDisable2Fa(digits);
+    }
+  };
+
+  if (isLoading || loadingStatus) {
     return (
-      <div className="container" style={{ textAlign: "center", padding: "100px 0" }}>
-        <p style={{ color: "var(--primary)" }}>Loading...</p>
+      <div className="container" style={{ textAlign: "center", padding: "80px 0" }}>
+        <Loader2 className="spin" size={32} style={{ margin: "0 auto 12px auto", color: "var(--primary)" }} />
+        <p style={{ color: "var(--text-muted)" }}>Loading security settings...</p>
       </div>
     );
   }
@@ -188,8 +223,9 @@ export default function SecurityPage() {
                 onClick={handleStartSetup}
                 disabled={activating}
                 className="btn btn-primary"
+                style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
               >
-                <QrCode size={18} />
+                {activating ? <Loader2 className="spin" size={18} /> : <QrCode size={18} />}
                 <span>{activating ? "Generating..." : "Enable 2FA"}</span>
               </button>
             </div>
@@ -242,7 +278,7 @@ export default function SecurityPage() {
                     maxLength={6}
                     placeholder="123456"
                     value={verifyCode}
-                    onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, ""))}
+                    onChange={handleVerifyCodeChange}
                     className="input-field"
                     style={{ textAlign: "center", letterSpacing: "6px", fontSize: "1.3rem", fontWeight: 700, maxWidth: "240px", margin: "0 auto" }}
                   />
@@ -260,8 +296,10 @@ export default function SecurityPage() {
                     type="submit"
                     disabled={activating || verifyCode.length !== 6}
                     className="btn btn-primary"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
                   >
-                    {activating ? "Verifying..." : "Confirm & Enable"}
+                    {activating && <Loader2 className="spin" size={16} />}
+                    <span>{activating ? "Verifying..." : "Confirm & Enable"}</span>
                   </button>
                 </div>
               </form>
@@ -290,6 +328,7 @@ export default function SecurityPage() {
                   type="button"
                   onClick={handleCopyRecoveryCodes}
                   className="btn btn-secondary"
+                  style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
                 >
                   {copiedCodes ? <Check size={16} color="#34d399" /> : <Copy size={16} />}
                   <span>{copiedCodes ? "Copied" : "Copy Codes"}</span>
@@ -338,7 +377,7 @@ export default function SecurityPage() {
                 className="input-field"
                 placeholder="6-digit code or recovery code"
                 value={disableCode}
-                onChange={(e) => setDisableCode(e.target.value)}
+                onChange={handleDisableCodeChange}
               />
             </div>
 
@@ -346,9 +385,10 @@ export default function SecurityPage() {
               type="submit"
               disabled={disabling}
               className="btn btn-danger"
-              style={{ marginTop: "6px" }}
+              style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "8px" }}
             >
-              {disabling ? "Disabling..." : "Disable 2FA"}
+              {disabling && <Loader2 className="spin" size={16} />}
+              <span>{disabling ? "Disabling..." : "Disable 2FA"}</span>
             </button>
           </form>
         </div>
