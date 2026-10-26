@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../../../context/AuthContext";
 import { useToast } from "../../../lib/toast";
 import { api } from "../../../lib/api";
-import { Camera, Sparkles, UploadCloud, X, ArrowLeft, Image as ImageIcon } from "lucide-react";
+import { Camera, UploadCloud, X, ArrowLeft } from "lucide-react";
 
 export default function NewPhotoPage() {
   const { user } = useAuth();
@@ -26,7 +26,7 @@ export default function NewPhotoPage() {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
-        error("Please select a valid image file (JPEG, PNG, WebP, GIF)");
+        error("Please select a valid image file");
         return;
       }
       setImageFile(file);
@@ -53,7 +53,7 @@ export default function NewPhotoPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!imageFile) {
-      error("Please choose a photo to upload");
+      error("Please select an image");
       return;
     }
 
@@ -67,35 +67,31 @@ export default function NewPhotoPage() {
       formData.append("image", imageFile);
 
       const created = await api.uploadPhoto(formData);
-      success("Photo uploaded to Cloudinary and AI summary generated!");
+      success("Photo uploaded successfully");
       router.push(`/photos/${created.id}`);
     } catch (err: any) {
-      error(err.message || "Failed to upload photo");
+      error(err.message || "Upload failed");
     } finally {
       setUploading(false);
     }
   };
 
   return (
-    <div className="container" style={{ maxWidth: "720px" }}>
-      <div style={{ marginBottom: "24px" }}>
-        <Link href="/photos" className="btn btn-secondary btn-sm" style={{ marginBottom: "16px" }}>
+    <div className="container" style={{ maxWidth: "680px" }}>
+      <div style={{ marginBottom: "20px" }}>
+        <Link href="/photos" className="btn btn-secondary btn-sm" style={{ marginBottom: "12px" }}>
           <ArrowLeft size={16} />
-          <span>Back to Photos</span>
+          <span>Back</span>
         </Link>
-        <h1 style={{ fontSize: "1.8rem", fontWeight: 800, color: "#fff" }}>
-          Upload New Travel Photo
+        <h1 style={{ fontSize: "1.8rem", fontWeight: 700, color: "#fff" }}>
+          Upload Photo
         </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: "0.95rem" }}>
-          Your image will be saved to your private Cloudinary folder, and OpenRouter will summarize your description.
-        </p>
       </div>
 
       <div className="card">
         <form onSubmit={handleSubmit}>
-          {/* Image Drag & Drop Area */}
           <div className="form-group">
-            <label className="form-label">Photo File</label>
+            <label className="form-label">Image</label>
             {!previewUrl ? (
               <div
                 onDragOver={(e) => e.preventDefault()}
@@ -104,34 +100,30 @@ export default function NewPhotoPage() {
                 style={{
                   border: "2px dashed var(--border-subtle)",
                   borderRadius: "var(--radius-lg)",
-                  padding: "40px 20px",
+                  padding: "36px 20px",
                   textAlign: "center",
                   cursor: "pointer",
                   background: "rgba(17, 24, 39, 0.4)",
-                  transition: "all 0.2s",
                 }}
               >
                 <div
                   style={{
-                    width: "52px",
-                    height: "52px",
+                    width: "48px",
+                    height: "48px",
                     borderRadius: "50%",
                     background: "rgba(99, 102, 241, 0.15)",
                     color: "var(--primary)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    margin: "0 auto 12px auto",
+                    margin: "0 auto 10px auto",
                   }}
                 >
-                  <UploadCloud size={28} />
+                  <UploadCloud size={24} />
                 </div>
-                <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "#fff", marginBottom: "4px" }}>
-                  Click to browse or drag & drop image
-                </h3>
-                <p style={{ color: "var(--text-dim)", fontSize: "0.85rem" }}>
-                  Supports JPEG, PNG, WebP, GIF (Max 10MB)
-                </p>
+                <div style={{ fontSize: "0.95rem", fontWeight: 600, color: "#fff" }}>
+                  Select or drag image here
+                </div>
               </div>
             ) : (
               <div
@@ -140,14 +132,14 @@ export default function NewPhotoPage() {
                   borderRadius: "var(--radius-lg)",
                   overflow: "hidden",
                   border: "1px solid var(--border-subtle)",
-                  maxHeight: "360px",
+                  maxHeight: "340px",
                   background: "#0f172a",
                 }}
               >
                 <img
                   src={previewUrl}
                   alt="Upload preview"
-                  style={{ width: "100%", maxHeight: "360px", objectFit: "contain", display: "block" }}
+                  style={{ width: "100%", maxHeight: "340px", objectFit: "contain", display: "block" }}
                 />
                 <button
                   type="button"
@@ -156,7 +148,7 @@ export default function NewPhotoPage() {
                   style={{ position: "absolute", top: "12px", right: "12px" }}
                 >
                   <X size={16} />
-                  <span>Change Photo</span>
+                  <span>Remove</span>
                 </button>
               </div>
             )}
@@ -170,12 +162,12 @@ export default function NewPhotoPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Photo Name / Title</label>
+            <label className="form-label">Title</label>
             <input
               type="text"
               required
               className="input-field"
-              placeholder="e.g. Sunset over Santorini"
+              placeholder="Photo title"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -187,30 +179,24 @@ export default function NewPhotoPage() {
               type="text"
               required
               className="input-field"
-              placeholder="e.g. Oia, Santorini, Greece"
+              placeholder="City, Country"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
             />
           </div>
 
           <div className="form-group">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <label className="form-label">Description</label>
-              <span style={{ fontSize: "0.75rem", color: "#34d399", display: "flex", alignItems: "center", gap: "4px" }}>
-                <Sparkles size={12} />
-                AI will summarize this text
-              </span>
-            </div>
+            <label className="form-label">Description</label>
             <textarea
               required
               className="input-field"
-              placeholder="Share the story behind this photo... (e.g. Watching the vibrant orange and pink sun dip below the caldera while listening to the Aegean sea waves.)"
+              placeholder="Write a description (summary will auto-generate)..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
 
-          <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "28px" }}>
+          <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "24px" }}>
             <Link href="/photos" className="btn btn-secondary">
               Cancel
             </Link>
@@ -219,17 +205,7 @@ export default function NewPhotoPage() {
               disabled={uploading || !imageFile}
               className="btn btn-primary"
             >
-              {uploading ? (
-                <>
-                  <Sparkles size={18} className="spin" />
-                  <span>Uploading & Generating Summary...</span>
-                </>
-              ) : (
-                <>
-                  <Camera size={18} />
-                  <span>Upload Photo</span>
-                </>
-              )}
+              {uploading ? "Uploading..." : "Upload"}
             </button>
           </div>
         </form>

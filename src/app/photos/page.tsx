@@ -62,7 +62,10 @@ export default function PhotosFeedPage() {
     }
   };
 
-  const handleDelete = async (id: number, name: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: number, name: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+
     if (!confirm(`Are you sure you want to delete "${name}"? This will also remove the image from Cloudinary.`)) {
       return;
     }
@@ -152,7 +155,7 @@ export default function PhotosFeedPage() {
           <p style={{ color: "var(--text-muted)", maxWidth: "460px", margin: "0 auto 24px auto", fontSize: "0.95rem" }}>
             {searchQuery
               ? "Try adjusting your search terms or clear the filter."
-              : "Upload your first photo from your recent adventures and watch OpenRouter AI generate a smart summary."}
+              : "Upload your first photo to get started."}
           </p>
           {!searchQuery && (
             <Link href="/photos/new" className="btn btn-primary">
@@ -164,7 +167,12 @@ export default function PhotosFeedPage() {
       ) : (
         <div className="photo-grid">
           {filteredPhotos.map((photo) => (
-            <article key={photo.id} className="photo-card">
+            <article
+              key={photo.id}
+              className="photo-card"
+              onClick={() => router.push(`/photos/${photo.id}`)}
+              style={{ cursor: "pointer" }}
+            >
               <div className="photo-card-image-wrap">
                 <img
                   src={photo.imageUrl}
@@ -198,7 +206,7 @@ export default function PhotosFeedPage() {
                   </div>
                 )}
 
-                <div className="photo-card-actions">
+                <div className="photo-card-actions" onClick={(e) => e.stopPropagation()}>
                   <span style={{ marginRight: "auto", fontSize: "0.75rem", color: "var(--text-dim)", display: "flex", alignItems: "center", gap: "4px" }}>
                     <Calendar size={12} />
                     {new Date(photo.createdAt).toLocaleDateString()}
@@ -223,7 +231,7 @@ export default function PhotosFeedPage() {
                   </Link>
 
                   <button
-                    onClick={() => handleDelete(photo.id, photo.name)}
+                    onClick={(e) => handleDelete(e, photo.id, photo.name)}
                     disabled={deletingId === photo.id}
                     className="btn btn-danger btn-sm"
                     title="Delete Photo"

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "../../lib/toast";
 import { api } from "../../lib/api";
-import { MailCheck, ArrowRight, RotateCw } from "lucide-react";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -17,7 +16,7 @@ function VerifyEmailContent() {
   const [resending, setResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
-  const { success, error, info } = useToast();
+  const { success, error } = useToast();
   const router = useRouter();
 
   useEffect(() => {
@@ -26,7 +25,6 @@ function VerifyEmailContent() {
     }
   }, [initialEmail]);
 
-  // Cooldown countdown timer
   useEffect(() => {
     if (cooldown <= 0) return;
     const interval = setInterval(() => {
@@ -45,10 +43,10 @@ function VerifyEmailContent() {
         code: code.trim(),
       });
 
-      success(res.message || "Email verified successfully! Please log in.");
+      success(res.message || "Email verified. Please log in.");
       router.push("/login");
     } catch (err: any) {
-      error(err.message || "Invalid or expired verification code");
+      error(err.message || "Invalid or expired code");
     } finally {
       setLoading(false);
     }
@@ -56,18 +54,17 @@ function VerifyEmailContent() {
 
   const handleResend = async () => {
     if (!email) {
-      error("Please enter your email address first");
+      error("Email is required");
       return;
     }
     setResending(true);
 
     try {
       const res = await api.resendCode({ email: email.trim() });
-      success(res.message || "A new 6-digit code has been sent to your email.");
-      setCooldown(180); // 3 minutes cooldown
+      success(res.message || "Verification code sent.");
+      setCooldown(180);
     } catch (err: any) {
-      error(err.message || "Could not resend code. Please wait for cooldown.");
-      // If error mentions waiting, set a default 60s cooldown
+      error(err.message || "Could not resend code");
       if (cooldown === 0) setCooldown(60);
     } finally {
       setResending(false);
@@ -78,40 +75,24 @@ function VerifyEmailContent() {
     <div className="auth-page-container">
       <div className="auth-card">
         <div className="auth-header">
-          <div
-            style={{
-              width: "48px",
-              height: "48px",
-              borderRadius: "12px",
-              background: "rgba(16, 185, 129, 0.15)",
-              color: "#34d399",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: "12px",
-            }}
-          >
-            <MailCheck size={24} />
-          </div>
-          <h1>Verify Your Email</h1>
-          <p>We sent a 6-digit confirmation code to your inbox.</p>
+          <h1>Verify Email</h1>
+          <p>Enter the 6-digit verification code sent to your email</p>
         </div>
 
         <form onSubmit={handleVerify}>
           <div className="form-group">
-            <label className="form-label">Email Address</label>
+            <label className="form-label">Email</label>
             <input
               type="email"
               required
               className="input-field"
-              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">6-Digit Verification Code</label>
+            <label className="form-label">Verification Code</label>
             <input
               type="text"
               required
@@ -128,17 +109,13 @@ function VerifyEmailContent() {
             type="submit"
             disabled={loading || code.length !== 6}
             className="btn btn-primary"
-            style={{ width: "100%", marginTop: "10px" }}
+            style={{ width: "100%", marginTop: "8px" }}
           >
-            {loading ? "Verifying..." : "Verify Code"}
-            {!loading && <ArrowRight size={18} />}
+            {loading ? "Verifying..." : "Verify Email"}
           </button>
         </form>
 
-        <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid var(--border-subtle)", textAlign: "center" }}>
-          <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "12px" }}>
-            Didn&apos;t receive the code? Check your spam folder or request a new one:
-          </p>
+        <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid var(--border-subtle)", textAlign: "center" }}>
           <button
             type="button"
             onClick={handleResend}
@@ -146,18 +123,15 @@ function VerifyEmailContent() {
             className="btn btn-secondary btn-sm"
             style={{ width: "100%" }}
           >
-            <RotateCw size={14} className={resending ? "spin" : ""} />
-            <span>
-              {cooldown > 0
-                ? `Resend Code in ${Math.floor(cooldown / 60)}:${(cooldown % 60).toString().padStart(2, "0")}`
-                : "Resend 6-Digit Code"}
-            </span>
+            {cooldown > 0
+              ? `Resend in ${Math.floor(cooldown / 60)}:${(cooldown % 60).toString().padStart(2, "0")}`
+              : "Resend Code"}
           </button>
         </div>
 
-        <div style={{ textAlign: "center", marginTop: "20px", fontSize: "0.9rem" }}>
+        <div style={{ textAlign: "center", marginTop: "16px", fontSize: "0.9rem" }}>
           <Link href="/login" style={{ color: "var(--text-dim)" }}>
-            Return to Sign In
+            Back to Sign In
           </Link>
         </div>
       </div>

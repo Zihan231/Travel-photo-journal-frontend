@@ -6,14 +6,13 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../lib/toast";
 import { api, ApiError } from "../../lib/api";
-import { LogIn, KeyRound, Shield, ArrowRight, Mail, Lock } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 2FA state
   const [requires2fa, setRequires2fa] = useState(false);
   const [twoFactorToken, setTwoFactorToken] = useState("");
   const [twoFactorCode, setTwoFactorCode] = useState("");
@@ -32,20 +31,19 @@ export default function LoginPage() {
       if ("requires2fa" in res && res.requires2fa) {
         setRequires2fa(true);
         setTwoFactorToken(res.twoFactorToken);
-        success("Credentials verified. Please enter your 2FA code.");
       } else if ("access_token" in res) {
         loginSuccess(res.access_token, res.user);
-        success("Logged in successfully!");
+        success("Logged in successfully");
         router.push("/photos");
       }
     } catch (err: any) {
       if (err instanceof ApiError && err.statusCode === 403 && err.message.toLowerCase().includes("not verified")) {
-        error("Your email is not verified yet. Redirecting to verification page...");
+        error("Email not verified. Redirecting...");
         setTimeout(() => {
           router.push(`/verify-email?email=${encodeURIComponent(email)}`);
-        }, 1200);
+        }, 1000);
       } else {
-        error(err.message || "Invalid email or password");
+        error(err.message || "Invalid credentials");
       }
     } finally {
       setLoading(false);
@@ -63,10 +61,10 @@ export default function LoginPage() {
       });
 
       loginSuccess(res.access_token, res.user);
-      success("Two-factor authentication verified!");
+      success("Verified successfully");
       router.push("/photos");
     } catch (err: any) {
-      error(err.message || "Invalid authenticator code or recovery code");
+      error(err.message || "Invalid code");
     } finally {
       setLoading(false);
     }
@@ -78,103 +76,66 @@ export default function LoginPage() {
         {!requires2fa ? (
           <>
             <div className="auth-header">
-              <div
-                style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "12px",
-                  background: "rgba(99, 102, 241, 0.15)",
-                  color: "#818cf8",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: "12px",
-                }}
-              >
-                <LogIn size={24} />
-              </div>
-              <h1>Welcome Back</h1>
-              <p>Sign in to your Travel Photo Journal</p>
+              <h1>Sign In</h1>
             </div>
 
             <form onSubmit={handleInitialLogin}>
               <div className="form-group">
-                <label className="form-label">Email Address</label>
-                <div style={{ position: "relative" }}>
-                  <input
-                    type="email"
-                    required
-                    className="input-field"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
+                <label className="form-label">Email</label>
+                <input
+                  type="email"
+                  required
+                  className="input-field"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
 
               <div className="form-group">
                 <label className="form-label">Password</label>
-                <div style={{ position: "relative" }}>
-                  <input
-                    type="password"
-                    required
-                    className="input-field"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
+                <input
+                  type="password"
+                  required
+                  className="input-field"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
                 className="btn btn-primary"
-                style={{ width: "100%", marginTop: "10px" }}
+                style={{ width: "100%", marginTop: "8px" }}
               >
-                {loading ? "Verifying credentials..." : "Sign In"}
-                {!loading && <ArrowRight size={18} />}
+                {loading ? "Signing in..." : "Sign In"}
               </button>
             </form>
 
-            <div style={{ textAlign: "center", marginTop: "24px", fontSize: "0.9rem", color: "var(--text-muted)" }}>
-              Don&apos;t have an account?{" "}
+            <div style={{ textAlign: "center", marginTop: "20px", fontSize: "0.9rem", color: "var(--text-muted)" }}>
+              No account?{" "}
               <Link href="/register" style={{ color: "var(--primary)", fontWeight: 600 }}>
-                Sign Up
+                Register
               </Link>
             </div>
           </>
         ) : (
           <>
             <div className="auth-header">
-              <div
-                style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "12px",
-                  background: "rgba(16, 185, 129, 0.15)",
-                  color: "#34d399",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: "12px",
-                }}
-              >
-                <Shield size={24} />
-              </div>
-              <h1>Two-Factor Auth</h1>
-              <p>Enter the 6-digit code from your authenticator app or an 8-character recovery code.</p>
+              <h1>Two-Factor Code</h1>
+              <p>Enter the 6-digit code or recovery code</p>
             </div>
 
             <form onSubmit={handle2FaSubmit}>
               <div className="form-group">
-                <label className="form-label">Security Code / Recovery Code</label>
                 <input
                   type="text"
                   required
                   autoFocus
                   className="input-field"
-                  placeholder="e.g. 123456 or ABCD-1234"
+                  placeholder="Code"
                   value={twoFactorCode}
                   onChange={(e) => setTwoFactorCode(e.target.value)}
                   style={{ textAlign: "center", letterSpacing: "2px", fontSize: "1.2rem", fontWeight: 700 }}
@@ -185,19 +146,18 @@ export default function LoginPage() {
                 type="submit"
                 disabled={loading}
                 className="btn btn-primary"
-                style={{ width: "100%", marginTop: "10px" }}
+                style={{ width: "100%", marginTop: "8px" }}
               >
-                {loading ? "Verifying..." : "Verify & Complete Login"}
-                {!loading && <ArrowRight size={18} />}
+                {loading ? "Verifying..." : "Verify Code"}
               </button>
 
               <button
                 type="button"
                 onClick={() => setRequires2fa(false)}
                 className="btn btn-secondary"
-                style={{ width: "100%", marginTop: "12px" }}
+                style={{ width: "100%", marginTop: "10px" }}
               >
-                Back to Login
+                Cancel
               </button>
             </form>
           </>

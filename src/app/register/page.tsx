@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "../../lib/toast";
 import { api } from "../../lib/api";
-import { UserPlus, ArrowRight } from "lucide-react";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -27,10 +26,10 @@ export default function RegisterPage() {
         password,
       });
 
-      success(res.message || "Registration successful! A verification code was sent to your email.");
+      success(res.message || "Registration successful");
       router.push(`/verify-email?email=${encodeURIComponent(email.trim())}`);
     } catch (err: any) {
-      error(err.message || "Failed to register account");
+      error(err.message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -40,45 +39,29 @@ export default function RegisterPage() {
     <div className="auth-page-container">
       <div className="auth-card">
         <div className="auth-header">
-          <div
-            style={{
-              width: "48px",
-              height: "48px",
-              borderRadius: "12px",
-              background: "rgba(99, 102, 241, 0.15)",
-              color: "#818cf8",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: "12px",
-            }}
-          >
-            <UserPlus size={24} />
-          </div>
-          <h1>Create an Account</h1>
-          <p>Start documenting your travel memories with AI</p>
+          <h1>Register</h1>
         </div>
 
         <form onSubmit={handleRegister}>
           <div className="form-group">
-            <label className="form-label">Full Name</label>
+            <label className="form-label">Name</label>
             <input
               type="text"
               required
               className="input-field"
-              placeholder="e.g. Alex Traveler"
+              placeholder="Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Email Address</label>
+            <label className="form-label">Email</label>
             <input
               type="email"
               required
               className="input-field"
-              placeholder="you@example.com"
+              placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -91,7 +74,7 @@ export default function RegisterPage() {
               required
               minLength={6}
               className="input-field"
-              placeholder="Minimum 6 characters"
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -101,14 +84,13 @@ export default function RegisterPage() {
             type="submit"
             disabled={loading}
             className="btn btn-primary"
-            style={{ width: "100%", marginTop: "10px" }}
+            style={{ width: "100%", marginTop: "8px" }}
           >
-            {loading ? "Creating account..." : "Sign Up"}
-            {!loading && <ArrowRight size={18} />}
+            {loading ? "Registering..." : "Register"}
           </button>
         </form>
 
-        <div style={{ textAlign: "center", marginTop: "24px", fontSize: "0.9rem", color: "var(--text-muted)" }}>
+        <div style={{ textAlign: "center", marginTop: "20px", fontSize: "0.9rem", color: "var(--text-muted)" }}>
           Already have an account?{" "}
           <Link href="/login" style={{ color: "var(--primary)", fontWeight: 600 }}>
             Sign In

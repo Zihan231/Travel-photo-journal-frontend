@@ -9,13 +9,8 @@ import {
   ShieldCheck,
   ShieldAlert,
   QrCode,
-  Key,
   Copy,
   Check,
-  Lock,
-  ArrowRight,
-  RefreshCw,
-  AlertTriangle,
 } from "lucide-react";
 
 export default function SecurityPage() {
@@ -72,9 +67,8 @@ export default function SecurityPage() {
       const res = await api.generate2FaSecret();
       setSecretData(res);
       setSetupStep("scan");
-      info("Scan the QR code with your authenticator app.");
     } catch (err: any) {
-      error(err.message || "Failed to initialize 2FA setup");
+      error(err.message || "Failed to generate 2FA secret");
     } finally {
       setActivating(false);
     }
@@ -83,7 +77,7 @@ export default function SecurityPage() {
   const handleVerifyAndEnable = async (e: React.FormEvent) => {
     e.preventDefault();
     if (verifyCode.trim().length !== 6) {
-      error("Please enter a valid 6-digit code");
+      error("Enter a 6-digit code");
       return;
     }
 
@@ -93,9 +87,9 @@ export default function SecurityPage() {
       setIs2faEnabled(true);
       setRecoveryCodes(res.recoveryCodes);
       setSetupStep("codes");
-      success("2FA enabled successfully! Please save your recovery codes.");
+      success("2FA enabled");
     } catch (err: any) {
-      error(err.message || "Invalid authenticator code");
+      error(err.message || "Invalid code");
     } finally {
       setActivating(false);
     }
@@ -104,14 +98,14 @@ export default function SecurityPage() {
   const handleCopyRecoveryCodes = () => {
     navigator.clipboard.writeText(recoveryCodes.join("\n"));
     setCopiedCodes(true);
-    success("Recovery codes copied to clipboard!");
-    setTimeout(() => setCopiedCodes(false), 2500);
+    success("Recovery codes copied");
+    setTimeout(() => setCopiedCodes(false), 2000);
   };
 
   const handleDisable2Fa = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!disablePassword || !disableCode) {
-      error("Both password and verification code are required to disable 2FA");
+      error("Password and code are required");
       return;
     }
 
@@ -122,7 +116,7 @@ export default function SecurityPage() {
       setSetupStep("idle");
       setDisablePassword("");
       setDisableCode("");
-      success("Two-factor authentication has been disabled.");
+      success("2FA disabled");
     } catch (err: any) {
       error(err.message || "Failed to disable 2FA");
     } finally {
@@ -133,39 +127,36 @@ export default function SecurityPage() {
   if (loadingStatus && is2faEnabled === null) {
     return (
       <div className="container" style={{ textAlign: "center", padding: "100px 0" }}>
-        <p style={{ color: "var(--primary)" }}>Checking security status...</p>
+        <p style={{ color: "var(--primary)" }}>Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="container" style={{ maxWidth: "760px" }}>
-      <div style={{ marginBottom: "28px" }}>
-        <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "#fff", marginBottom: "6px" }}>
-          Security & Two-Factor Authentication
+    <div className="container" style={{ maxWidth: "680px" }}>
+      <div style={{ marginBottom: "24px" }}>
+        <h1 style={{ fontSize: "1.8rem", fontWeight: 700, color: "#fff" }}>
+          Two-Factor Authentication
         </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: "0.95rem" }}>
-          Protect your account against unauthorized access using Time-based One-Time Passwords (TOTP).
-        </p>
       </div>
 
-      {/* Status Banner */}
+      {/* Status */}
       <div
         className="card"
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          marginBottom: "28px",
+          marginBottom: "24px",
           borderLeft: `4px solid ${is2faEnabled ? "#10b981" : "#f59e0b"}`,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           <div
             style={{
-              width: "48px",
-              height: "48px",
-              borderRadius: "12px",
+              width: "42px",
+              height: "42px",
+              borderRadius: "10px",
               background: is2faEnabled ? "rgba(16, 185, 129, 0.15)" : "rgba(245, 158, 11, 0.15)",
               color: is2faEnabled ? "#34d399" : "#fbbf24",
               display: "flex",
@@ -173,31 +164,23 @@ export default function SecurityPage() {
               justifyContent: "center",
             }}
           >
-            {is2faEnabled ? <ShieldCheck size={28} /> : <ShieldAlert size={28} />}
+            {is2faEnabled ? <ShieldCheck size={24} /> : <ShieldAlert size={24} />}
           </div>
           <div>
-            <h2 style={{ fontSize: "1.15rem", fontWeight: 700, color: "#fff" }}>
-              {is2faEnabled ? "Two-Factor Authentication is Enabled" : "Two-Factor Authentication is Disabled"}
+            <h2 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#fff" }}>
+              Status: {is2faEnabled ? "Enabled" : "Disabled"}
             </h2>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "2px" }}>
-              {is2faEnabled
-                ? "Your account requires an authenticator code or recovery code on every sign-in."
-                : "Add an extra layer of protection to your travel journal and photos."}
-            </p>
           </div>
         </div>
       </div>
 
-      {/* Flow 1: Setup 2FA */}
+      {/* Setup */}
       {!is2faEnabled && (
         <div className="card">
           {setupStep === "idle" && (
             <div>
-              <h2 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#fff", marginBottom: "8px" }}>
-                Set Up an Authenticator App
-              </h2>
-              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", lineHeight: 1.6, marginBottom: "20px" }}>
-                Use an app like <strong>Google Authenticator</strong>, <strong>Microsoft Authenticator</strong>, <strong>Authy</strong>, or <strong>1Password</strong> to scan a QR code. Your TOTP secrets are encrypted at rest with AES-256-GCM.
+              <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", marginBottom: "16px" }}>
+                Scan a QR code using your authenticator app (Google Authenticator, Authy, etc.) to enable 2FA.
               </p>
 
               <button
@@ -207,40 +190,37 @@ export default function SecurityPage() {
                 className="btn btn-primary"
               >
                 <QrCode size={18} />
-                <span>{activating ? "Generating QR Code..." : "Enable Two-Factor Authentication"}</span>
+                <span>{activating ? "Generating..." : "Enable 2FA"}</span>
               </button>
             </div>
           )}
 
           {setupStep === "scan" && secretData && (
             <div>
-              <h2 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#fff", marginBottom: "4px" }}>
-                1. Scan QR Code
+              <h2 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#fff", marginBottom: "12px" }}>
+                Scan with Authenticator App
               </h2>
-              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: "16px" }}>
-                Open your authenticator app and scan this QR code:
-              </p>
 
               <div style={{ textAlign: "center" }}>
                 <div className="qr-container">
                   <img
                     src={secretData.qrCodeUrl}
                     alt="2FA QR Code"
-                    style={{ width: "200px", height: "200px", display: "block" }}
+                    style={{ width: "190px", height: "190px", display: "block" }}
                   />
                 </div>
               </div>
 
-              <div style={{ marginTop: "16px", marginBottom: "24px" }}>
+              <div style={{ marginTop: "12px", marginBottom: "20px" }}>
                 <p style={{ fontSize: "0.85rem", color: "var(--text-dim)", marginBottom: "4px" }}>
-                  Can&apos;t scan? Enter this secret manually in your app:
+                  Manual key:
                 </p>
                 <code
                   style={{
                     display: "block",
                     background: "rgba(255, 255, 255, 0.06)",
                     border: "1px solid var(--border-subtle)",
-                    padding: "8px 12px",
+                    padding: "6px 10px",
                     borderRadius: "var(--radius-sm)",
                     color: "#38bdf8",
                     fontFamily: "monospace",
@@ -253,14 +233,8 @@ export default function SecurityPage() {
                 </code>
               </div>
 
-              <form onSubmit={handleVerifyAndEnable} style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: "20px" }}>
-                <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#fff", marginBottom: "6px" }}>
-                  2. Enter 6-Digit Code
-                </h3>
-                <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "16px" }}>
-                  Enter the 6-digit code currently displayed in your authenticator app to confirm setup:
-                </p>
-
+              <form onSubmit={handleVerifyAndEnable} style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: "16px" }}>
+                <label className="form-label">Enter 6-digit code</label>
                 <div className="form-group">
                   <input
                     type="text"
@@ -270,11 +244,11 @@ export default function SecurityPage() {
                     value={verifyCode}
                     onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, ""))}
                     className="input-field"
-                    style={{ textAlign: "center", letterSpacing: "6px", fontSize: "1.3rem", fontWeight: 700, maxWidth: "260px", margin: "0 auto" }}
+                    style={{ textAlign: "center", letterSpacing: "6px", fontSize: "1.3rem", fontWeight: 700, maxWidth: "240px", margin: "0 auto" }}
                   />
                 </div>
 
-                <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "20px" }}>
+                <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "16px" }}>
                   <button
                     type="button"
                     onClick={() => setSetupStep("idle")}
@@ -287,8 +261,7 @@ export default function SecurityPage() {
                     disabled={activating || verifyCode.length !== 6}
                     className="btn btn-primary"
                   >
-                    {activating ? "Verifying..." : "Verify & Activate 2FA"}
-                    {!activating && <ArrowRight size={18} />}
+                    {activating ? "Verifying..." : "Confirm & Enable"}
                   </button>
                 </div>
               </form>
@@ -297,14 +270,11 @@ export default function SecurityPage() {
 
           {setupStep === "codes" && (
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#34d399", marginBottom: "8px" }}>
-                <Check size={20} />
-                <h2 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#fff" }}>
-                  Save Your Recovery Codes
-                </h2>
-              </div>
-              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", lineHeight: 1.5, marginBottom: "16px" }}>
-                If you ever lose access to your authenticator device, each of these one-time codes can be used once to sign in. <strong>They will not be shown again!</strong>
+              <h2 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#fff", marginBottom: "6px" }}>
+                Backup Recovery Codes
+              </h2>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "16px" }}>
+                Save these codes. Each code can be used once if you lose your authenticator app.
               </p>
 
               <div className="recovery-grid">
@@ -315,21 +285,21 @@ export default function SecurityPage() {
                 ))}
               </div>
 
-              <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
+              <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
                 <button
                   type="button"
                   onClick={handleCopyRecoveryCodes}
                   className="btn btn-secondary"
                 >
                   {copiedCodes ? <Check size={16} color="#34d399" /> : <Copy size={16} />}
-                  <span>{copiedCodes ? "Copied!" : "Copy All Codes"}</span>
+                  <span>{copiedCodes ? "Copied" : "Copy Codes"}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setSetupStep("idle")}
                   className="btn btn-primary"
                 >
-                  I Have Saved My Codes
+                  Done
                 </button>
               </div>
             </div>
@@ -337,39 +307,36 @@ export default function SecurityPage() {
         </div>
       )}
 
-      {/* Flow 2: Disable 2FA */}
+      {/* Disable */}
       {is2faEnabled && (
         <div className="card">
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-            <AlertTriangle size={20} color="#f87171" />
-            <h2 style={{ fontSize: "1.2rem", fontWeight: 700, color: "#fff" }}>
-              Disable Two-Factor Authentication
-            </h2>
-          </div>
-          <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", lineHeight: 1.5, marginBottom: "20px" }}>
-            For your security, disabling 2FA requires verifying both your current account password and a valid 6-digit code or recovery code.
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 600, color: "#fff", marginBottom: "8px" }}>
+            Disable 2FA
+          </h2>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "16px" }}>
+            Enter your current account password and code to disable two-factor authentication.
           </p>
 
           <form onSubmit={handleDisable2Fa}>
             <div className="form-group">
-              <label className="form-label">Current Account Password</label>
+              <label className="form-label">Password</label>
               <input
                 type="password"
                 required
                 className="input-field"
-                placeholder="••••••••"
+                placeholder="Password"
                 value={disablePassword}
                 onChange={(e) => setDisablePassword(e.target.value)}
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Authenticator Code or Recovery Code</label>
+              <label className="form-label">Code / Recovery Code</label>
               <input
                 type="text"
                 required
                 className="input-field"
-                placeholder="e.g. 123456 or ABCD-1234"
+                placeholder="6-digit code or recovery code"
                 value={disableCode}
                 onChange={(e) => setDisableCode(e.target.value)}
               />
@@ -379,9 +346,9 @@ export default function SecurityPage() {
               type="submit"
               disabled={disabling}
               className="btn btn-danger"
-              style={{ marginTop: "10px" }}
+              style={{ marginTop: "6px" }}
             >
-              {disabling ? "Disabling..." : "Confirm & Disable 2FA"}
+              {disabling ? "Disabling..." : "Disable 2FA"}
             </button>
           </form>
         </div>
